@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مؤسسة بخت الرضا للرعاية الصحية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #f4f7f6; --header: #1a2a3a; --primary: #c0392b; --accent: #27ae60; }
+        body { font-family: 'Cairo', sans-serif; background: var(--bg); margin: 0; padding: 10px; display: flex; justify-content: center; }
+        .app-card { width: 100%; max-width: 450px; background: white; border-radius: 25px; overflow: hidden; box-shadow: 0 15px 50px rgba(0,0,0,0.1); border: 1px solid #ddd; }
+        .org-bar { background: #fff; padding: 15px; text-align: center; border-bottom: 3px solid var(--primary); display: flex; align-items: center; justify-content: center; gap: 12px; }
+        .org-logo { height: 45px; border-radius: 5px; }
+        .header { background: var(--header); color: white; padding: 25px; text-align: center; }
+        .header h1 { margin: 0; font-size: 20px; color: #ecf0f1; }
+        .content { padding: 25px; }
+        textarea { width: 100%; height: 120px; border: 2px solid #eee; border-radius: 15px; padding: 12px; font-family: 'Cairo'; font-size: 16px; outline: none; box-sizing: border-box; }
+        .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 16px; border-radius: 15px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 15px; }
+        .result-item { margin-top: 15px; padding: 15px; border-right: 6px solid var(--primary); background: #fff5f5; border-radius: 10px; }
+        .lab-card { background: #fff; border: 2px dashed var(--primary); padding: 15px; margin-top: 15px; border-radius: 10px; position: relative; }
+        .lab-card::before { content: "طلب فحص رسمي"; position: absolute; top: -10px; left: 10px; background: var(--primary); color: white; font-size: 10px; padding: 2px 8px; border-radius: 5px; }
+        .footer { background: #f9f9f9; padding: 20px; text-align: center; border-top: 1px solid #eee; }
+        .whatsapp-btn { display: inline-block; background: #25D366; color: white; padding: 10px 20px; border-radius: 50px; text-decoration: none; font-size: 14px; margin-top: 12px; font-weight: bold; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<div class="app-card">
+    <div class="org-bar">
+        <img src="https://cdn-icons-png.flaticon.com/512/2966/2966327.png" class="org-logo">
+        <span style="font-weight: bold; color: var(--header); font-size: 18px;">مؤسسة بخت الرضا الطبية</span>
+    </div>
+    <div class="header">
+        <h1>🩺 نظام الاستشارة الباطنية الذكي</h1>
+    </div>
+    <div class="content">
+        <textarea id="userInput" placeholder="صف أعراضك بدقة لمستشار بخت الرضا..."></textarea>
+        <button class="btn" onclick="sendData()">⚡ إرسال للتحليل الطبي</button>
+        <div id="results"></div>
+    </div>
+    <div class="footer">
+        <div style="font-size: 12px; color: #444; font-weight: bold;">مركز بخت الرضا للتميز الطبي - الدويم</div>
+        <a href="https://wa.me/249966551112" class="whatsapp-btn">💬 تواصل مع العيادة المركزية</a>
+    </div>
+</div>
+<script>
+    async function sendData() {
+        const text = document.getElementById('userInput').value;
+        const resDiv = document.getElementById('results');
+        if(!text) return;
+        resDiv.innerHTML = `<div style="text-align:center;"><div class="loader"></div><p style="font-size:12px;">جاري فحص البيانات طبياً في سجلات بخت الرضا...</p></div>`;
+        try {
+            const response = await fetch('/diagnose', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text: text})
+            });
+            const data = await response.json();
+            setTimeout(() => {
+                resDiv.innerHTML = "";
+                data.forEach(item => {
+                    resDiv.innerHTML += `<div class="result-item"><strong style="color:var(--primary);">📋 تشخيص بخت الرضا: ${item.disease}</strong><div class="lab-card">🔬 الفحص الموصى به: <strong>${item.tests}</strong><br><button onclick="window.print()" style="margin-top:10px; border:none; background:#eee; padding:5px 10px; cursor:pointer; border-radius:5px; font-size:11px;">📥 حفظ الطلب</button></div></div>`;
+                });
+            }, 1500);
+        } catch (e) {
+            resDiv.innerHTML = "<p style='color:red; text-align:center;'>فشل الاتصال بسيرفر المؤسسة.</p>";
+        }
+    }
+</script>
+</body>
+</html>
