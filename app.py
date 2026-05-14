@@ -1,26 +1,19 @@
 import os
 import json
-import io
 from flask import Flask, render_template, request, jsonify
-from PIL import Image
-import pytesseract
 
 app = Flask(__name__)
 
-# إعداد مسار محرك الكاميرا للسيرفر
-if os.path.exists('/usr/bin/tesseract'):
-    pytesseract.pytesseract.tesseract_cmd = '/usr/bin/tesseract'
-
+# دالة تحميل بيانات الـ 100 مرض
 def load_data():
-    # البحث عن ملف الـ 100 مرض في المجلد الرئيسي أو templates
-    paths = ['diseases.json', os.path.join('templates', 'diseases.json')]
-    for path in paths:
-        if os.path.exists(path):
-            try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-            except:
-                continue
+    # بفتش على الملف في المجلد الرئيسي لمشروع بخت الرضا
+    path = 'diseases.json'
+    if os.path.exists(path):
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return []
     return []
 
 @app.route('/')
@@ -30,28 +23,26 @@ def home():
 @app.route('/check', methods=['POST'])
 def check():
     try:
-        user_input = request.json.get('symptoms', '')
+        # استلام الأعراض من المستخدم
+        data = request.get_json()
+        user_input = data.get('symptoms', '').lower()
+        
         all_diseases = load_data()
-        results = [item for item in all_diseases if any(key in user_input for key in item["keys"])]
+        
+        # فحص الأعراض ومقارنتها بالكلمات المفتاحية في الملف
+        results = [
+            item for item in all_diseases 
+            if any(key.lower() in user_input for key in item.get("keys", []))
+        ]
+        
         if not results:
-            return jsonify([{"disease": "غير محدد", "tests": "يرجى مراجعة طبيب بخت الرضا."}])
+            return jsonify([{"disease": "غير محدد", "tests": "يرجى مراجعة طبيب جامعة بخت الرضا للفحص السريري."}])
+            
         return jsonify(results)
     except Exception as e:
-        return jsonify([{"disease": "خطأ", "tests": str(e)}])
-
-@app.route('/scan', methods=['POST'])
-def scan():
-    if 'image' not in request.files:
-        return jsonify({"error": "لم يتم استلام صورة"})
-    try:
-        file = request.files['image']
-        img = Image.open(io.BytesIO(file.read()))
-        # محاولة قراءة النص من الروشتة
-        text = pytesseract.image_to_string(img, lang='eng')
-        return jsonify({"extracted_text": text if text.strip() else "النص غير واضح"})
-    except Exception:
-        return jsonify({"extracted_text": "خدمة الكاميرا سيعاد تفعيلها قريباً"})
+        return jsonify([{"disease": "خطأ في النظام", "tests": str(e)}])
 
 if __name__ == '__main__':
+    # إعداد المنفذ تلقائياً ليتناسب مع سيرفر Render
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
